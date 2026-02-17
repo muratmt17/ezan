@@ -1,0 +1,7 @@
+{
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "name": "Ezan Vakti, Zikir Zekat ve Kur'an",
+  "description": "İslami İbadet Asistanı: Ezan Vakitleri, Kur'an-ı Kerim, Zikirmatik ve Zekat Hesaplama"
+}
