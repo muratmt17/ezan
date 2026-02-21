@@ -1,16 +1,43 @@
 {
+  "id": "com.ezanvakti.app",
   "name": "Ezan Vakti, Zikir Zekat ve Kur'an",
   "short_name": "Ezan Vakti",
   "description": "İslami İbadet Asistanı: Ezan Vakitleri, Kur'an-ı Kerim, Zikirmatik ve Zekat Hesaplama",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0f766e",
   "theme_color": "#0f766e",
+  "categories": ["lifestyle", "utilities", "education"],
+  "iarc_rating_id": "e58c2415-063f-42e0-9332-0347bc233073",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/2913/2913520.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2913/2913520.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://picsum.photos/seed/ezan1/1080/1920",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Ana Ekran"
+    },
+    {
+      "src": "https://picsum.photos/seed/ezan2/1920/1080",
+      "sizes": "1920x1080",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Geniş Ekran Görünümü"
     }
   ]
 }
