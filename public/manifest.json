@@ -1,0 +1,16 @@
+{
+  "name": "Ezan Vakti, Zikir Zekat ve Kur'an",
+  "short_name": "Ezan Vakti",
+  "description": "İslami İbadet Asistanı: Ezan Vakitleri, Kur'an-ı Kerim, Zikirmatik ve Zekat Hesaplama",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f766e",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2913/2913520.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
