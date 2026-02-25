@@ -971,7 +971,10 @@ const SettingsScreen = ({ settings, setSettings }: any) => {
         </div>
       </div>
 
-      <div className="text-center text-gray-400 text-xs py-4"><p>Ezan Vakti, Zikir Zekat ve Kur'an v1.2.0</p></div>
+      <div className="text-center text-gray-400 text-xs py-4">
+        <p>Ezan Vakti, Zikir Zekat ve Kur'an v1.2.0</p>
+        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-teal-600 hover:underline">Gizlilik Politikası</a>
+      </div>
 
     </div>
   );
