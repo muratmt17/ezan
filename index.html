@@ -17,7 +17,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
+                navigator.serviceWorker.register('/sw.js')
                     .then(reg => console.log('Service Worker registered'))
                     .catch(err => console.log('Service Worker registration failed', err));
             });
@@ -65,7 +65,7 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="./index-C5RDu_2X.js"></script>
+  <script type="module" crossorigin src="/Ezan-Vakti/assets/index-C5RDu_2X.js"></script>
 </head>
 <body>
     <div id="root"></div>
