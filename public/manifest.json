@@ -3,7 +3,8 @@
   "name": "Ezan Vakti, Zikir Zekat ve Kur'an",
   "short_name": "Ezan Vakti",
   "description": "İslami İbadet Asistanı: Ezan Vakitleri, Kur'an-ı Kerim, Zikirmatik ve Zekat Hesaplama",
-  "start_url": "/",
+  "start_url": "/Ezan-Vakti/",
+  "scope": "/Ezan-Vakti/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f766e",
@@ -12,16 +13,22 @@
   "iarc_rating_id": "e58c2415-063f-42e0-9332-0347bc233073",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2913/2913520.png",
+      "src": "/Ezan-Vakti/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2913/2913520.png",
+      "src": "/Ezan-Vakti/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/Ezan-Vakti/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "screenshots": [
