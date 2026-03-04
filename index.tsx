@@ -325,8 +325,9 @@ const isRamadan = () => {
   const today = new Date();
   const m = today.getMonth(); 
   const d = today.getDate();
-  if (m === 1 && d >= 18) return true; 
-  if (m === 2 && d <= 19) return true; 
+  // Ramadan 2026: Feb 16 - March 16
+  if (m === 1 && d >= 15) return true; 
+  if (m === 2 && d <= 17) return true; 
   return false;
 };
 
@@ -369,13 +370,46 @@ const Header = ({ title }: { title: string }) => (
   </div>
 );
 
-const HomeScreen = ({ times, loading, error, settings, onRefresh }: any) => {
+const HomeScreen = ({ times, loading, error, settings, onRefresh, onDetectLocation }: any) => {
   const next = getNextPrayer(times);
   const today = new Date();
   const dateStr = today.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
   const [dailyVerse, setDailyVerse] = useState<DailyContent | null>(null);
   const [dailyHadith, setDailyHadith] = useState<DailyContent | null>(null);
   const [verseLoading, setVerseLoading] = useState(true);
+  const [iftarCountdown, setIftarCountdown] = useState<string>('');
+
+  useEffect(() => {
+    if (!times || !isRamadan()) return;
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const [h, m] = times.Maghrib.split(':').map(Number);
+      const iftarTime = new Date();
+      iftarTime.setHours(h, m, 0);
+
+      const diff = iftarTime.getTime() - now.getTime();
+      
+      if (diff <= 0) {
+        // If it's after iftar but before midnight, show a message
+        // If it's very late (e.g. after 2 hours), maybe stop showing or show "Hayırlı İftarlar"
+        if (diff > -7200000) { // 2 hours after iftar
+          setIftarCountdown('Afiyet Olsun / Hayırlı İftarlar');
+        } else {
+          setIftarCountdown('Yarınki İftara Hazırlık');
+        }
+      } else {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setIftarCountdown(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      }
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, [times]);
 
   useEffect(() => {
     const fetchDailyContent = async () => {
@@ -441,7 +475,7 @@ const HomeScreen = ({ times, loading, error, settings, onRefresh }: any) => {
             </div>
             <p className="text-teal-50 opacity-80 text-xs">{dateStr}</p>
           </div>
-          <button onClick={onRefresh} className="p-2 bg-white/10 rounded-full hover:bg-white/20">
+          <button onClick={onDetectLocation} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-all active:scale-95" title="Konumu Algıla">
             <MapPin size={18} />
           </button>
         </div>
@@ -479,7 +513,12 @@ const HomeScreen = ({ times, loading, error, settings, onRefresh }: any) => {
             <Moon className="text-amber-600 mr-3" />
             <div>
               <h3 className="font-bold text-amber-800 text-lg">Hayırlı Ramazanlar</h3>
-              <p className="text-amber-700 text-sm">İftara kalan süre sayaç burada olacak.</p>
+              <div className="flex items-center space-x-2">
+                <p className="text-amber-700 text-sm font-medium">İftara Kalan Süre:</p>
+                <span className="bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-mono font-bold text-lg animate-pulse">
+                  {iftarCountdown || '--:--:--'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -920,7 +959,20 @@ const SettingsScreen = ({ settings, setSettings }: any) => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <h3 className="font-bold text-gray-700 mb-4">Konum Ayarları</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-gray-700">Konum Ayarları</h3>
+          <button 
+            onClick={() => {
+              // We need to pass detectLocation to SettingsScreen or use a custom event
+              // For simplicity, I'll trigger it via a custom event or just use the prop if I add it
+              window.dispatchEvent(new CustomEvent('detect-location'));
+            }}
+            className="flex items-center space-x-1 text-xs bg-teal-100 text-teal-700 px-3 py-1.5 rounded-full font-bold hover:bg-teal-200 transition-colors"
+          >
+            <Navigation size={12} />
+            <span>KONUMU ALGILA</span>
+          </button>
+        </div>
         <div className="space-y-3">
           <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
             <div><p className="text-sm text-gray-500">Şehir</p><p className="font-bold text-lg">{settings.city}</p></div>
@@ -1065,9 +1117,113 @@ const App = () => {
     return () => clearInterval(interval);
   }, [times, settings]);
 
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Tarayıcınız konum özelliğini desteklemiyor.");
+      return;
+    }
+
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          // Reverse geocoding to find city/district using Nominatim (OpenStreetMap)
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&accept-language=tr`);
+          const data = await res.json();
+          
+          const address = data.address;
+          // Nominatim address fields vary, try common ones for Turkey
+          // Province is usually the main city (e.g. Istanbul)
+          const city = address.province || address.city || address.state;
+          // District can be in several fields
+          const district = address.town || address.city_district || address.district || address.suburb || address.village;
+
+          if (city) {
+            // Try to match with CITIES_DATA
+            const matchedCity = Object.keys(CITIES_DATA).find(c => 
+              c.toLocaleLowerCase('tr').includes(city.toLocaleLowerCase('tr')) || 
+              city.toLocaleLowerCase('tr').includes(c.toLocaleLowerCase('tr'))
+            );
+
+            if (matchedCity) {
+              const newSettings = { ...settings, city: matchedCity, district: 'Merkez' };
+              
+              // Try to find district if possible
+              if (district) {
+                const matchedDistrict = CITIES_DATA[matchedCity].find(d => 
+                  d.toLocaleLowerCase('tr').includes(district.toLocaleLowerCase('tr')) ||
+                  district.toLocaleLowerCase('tr').includes(d.toLocaleLowerCase('tr'))
+                );
+                if (matchedDistrict) {
+                  newSettings.district = matchedDistrict;
+                }
+              }
+              
+              setSettings(newSettings);
+              localStorage.setItem('userSettings', JSON.stringify(newSettings));
+              // fetchTimes will be triggered by useEffect due to settings change
+            } else {
+              alert(`Konum belirlendi: ${city}. Ancak şehir listemizde tam eşleşme bulunamadı.`);
+              setLoading(false);
+            }
+          } else if (district) {
+            // Sometimes only district is returned clearly, try to find which city it belongs to
+            let foundCity = '';
+            let foundDistrict = '';
+            
+            for (const [cityName, districts] of Object.entries(CITIES_DATA)) {
+              const match = districts.find(d => 
+                d.toLocaleLowerCase('tr').includes(district.toLocaleLowerCase('tr')) ||
+                district.toLocaleLowerCase('tr').includes(d.toLocaleLowerCase('tr'))
+              );
+              if (match) {
+                foundCity = cityName;
+                foundDistrict = match;
+                break;
+              }
+            }
+
+            if (foundCity) {
+              const newSettings = { ...settings, city: foundCity, district: foundDistrict };
+              setSettings(newSettings);
+              localStorage.setItem('userSettings', JSON.stringify(newSettings));
+            } else {
+              alert("Konum belirlendi ancak uygun şehir/ilçe eşleşmesi bulunamadı.");
+              setLoading(false);
+            }
+          } else {
+            alert("Konum bilgisi (şehir/ilçe) alınamadı.");
+            setLoading(false);
+          }
+        } catch (err) {
+          console.error("Location error:", err);
+          alert("Konum bilgisi alınırken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.");
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        let msg = "Konum alınamadı.";
+        if (error.code === 1) msg = "Konum izni reddedildi. Lütfen tarayıcı ayarlarından izin verin.";
+        else if (error.code === 2) msg = "Konum bilgisi mevcut değil.";
+        else if (error.code === 3) msg = "Konum alma zaman aşımına uğradı.";
+        alert(msg);
+        setLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  useEffect(() => {
+    const handleDetect = () => detectLocation();
+    window.addEventListener('detect-location', handleDetect);
+    return () => window.removeEventListener('detect-location', handleDetect);
+  }, [settings]); // Re-bind when settings change to ensure correct closure
+
   const renderContent = () => {
     switch (activeTab) {
-      case 'home': return <HomeScreen times={times} loading={loading} error={error} settings={settings} onRefresh={fetchTimes} />;
+      case 'home': return <HomeScreen times={times} loading={loading} error={error} settings={settings} onRefresh={fetchTimes} onDetectLocation={detectLocation} />;
       case 'quran': return <QuranScreen />;
       case 'tools': return <ToolsScreen />;
       case 'settings': return <SettingsScreen settings={settings} setSettings={setSettings} />;
