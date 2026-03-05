@@ -1,8 +1,8 @@
 const CACHE_NAME = 'ezan-vakti-v1';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  '/Ezan-Vakti/',
+  '/Ezan-Vakti/index.html',
+  '/Ezan-Vakti/manifest.json',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest'
 ];
@@ -28,22 +28,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Skip cross-origin requests or API calls if needed, 
-  // but for a simple PWA, we can try to serve from cache
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
     })
   );
-});
-
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
-    const { title, options } = event.data;
-    event.waitUntil(
-      self.registration.showNotification(title, options)
-    );
-  }
 });
 
 self.addEventListener('notificationclick', (event) => {
@@ -53,7 +42,7 @@ self.addEventListener('notificationclick', (event) => {
       if (clientList.length > 0) {
         return clientList[0].focus();
       }
-      return clients.openWindow('/');
+      return clients.openWindow('/Ezan-Vakti/');
     })
   );
 });
