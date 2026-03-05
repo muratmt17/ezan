@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Moon, Sun, BookOpen, Calculator, Calendar as CalendarIcon, 
   Settings, MapPin, Volume2, VolumeX, ChevronRight, Home, 
   Menu, X, Clock, Hand, Heart, Bell, Music, Trash2, Plus,
   Search, ArrowUpDown, Bookmark, ArrowLeft, CheckCircle, Navigation,
-  WifiOff, Send
+  WifiOff, Send, Compass, Map as MapIcon, RotateCcw, Minus
 } from 'lucide-react';
 
 // --- TYPES & INTERFACES ---
@@ -55,6 +56,15 @@ interface DailyContent {
   source: string;
 }
 
+interface KazaData {
+  fajr: number;
+  dhuhr: number;
+  asr: number;
+  maghrib: number;
+  isha: number;
+  witr: number;
+}
+
 interface UserSettings {
   notificationsEnabled: boolean;
   city: string;
@@ -62,6 +72,7 @@ interface UserSettings {
   soundEnabled: boolean;
   selectedPrayerSound: string;
   vibrationEnabled: boolean;
+  theme: 'light' | 'dark' | 'auto';
   
   hadithNotificationEnabled: boolean;
   hadithSoundEnabled: boolean;
@@ -391,9 +402,7 @@ const HomeScreen = ({ times, loading, error, settings, onRefresh, onDetectLocati
       const diff = iftarTime.getTime() - now.getTime();
       
       if (diff <= 0) {
-        // If it's after iftar but before midnight, show a message
-        // If it's very late (e.g. after 2 hours), maybe stop showing or show "Hayırlı İftarlar"
-        if (diff > -7200000) { // 2 hours after iftar
+        if (diff > -7200000) { 
           setIftarCountdown('Afiyet Olsun / Hayırlı İftarlar');
         } else {
           setIftarCountdown('Yarınki İftara Hazırlık');
@@ -459,107 +468,191 @@ const HomeScreen = ({ times, loading, error, settings, onRefresh, onDetectLocati
     fetchDailyContent();
   }, []);
 
+  const prayerItems = times ? [
+    { name: 'İmsak', time: times.Fajr, icon: <Moon size={18} /> },
+    { name: 'Güneş', time: times.Sunrise, icon: <Sun size={18} /> },
+    { name: 'Öğle', time: times.Dhuhr, icon: <Sun size={18} /> },
+    { name: 'İkindi', time: times.Asr, icon: <Sun size={18} /> },
+    { name: 'Akşam', time: times.Maghrib, icon: <Moon size={18} /> },
+    { name: 'Yatsı', time: times.Isha, icon: <Moon size={18} /> },
+  ] : [];
+
   return (
-    <div className="pb-36 space-y-4">
-      <div className="bg-gradient-to-br from-teal-600 to-teal-800 text-white p-6 rounded-b-3xl shadow-lg">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <div className="flex items-center space-x-1">
-               <p className="text-teal-100 text-sm font-medium">{settings.city}</p>
-               {settings.district && settings.district !== 'Merkez' && (
-                 <>
-                   <ChevronRight size={12} className="text-teal-300" />
-                   <p className="text-teal-200 text-sm">{settings.district}</p>
-                 </>
-               )}
-            </div>
-            <p className="text-teal-50 opacity-80 text-xs">{dateStr}</p>
+    <div className="pb-36">
+      {/* Hero Section */}
+      <div className="relative h-80 overflow-hidden rounded-b-[3rem] shadow-2xl">
+        <img 
+          src="https://picsum.photos/seed/mosque/800/600?blur=2" 
+          alt="Background" 
+          className="absolute inset-0 w-full h-full object-cover scale-110"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-teal-900/60 via-teal-800/40 to-teal-900/90"></div>
+        
+        <div className="absolute inset-0 p-6 flex flex-col justify-between text-white">
+          <div className="flex justify-between items-start">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-1"
+            >
+              <div className="flex items-center space-x-1">
+                <MapPin size={14} className="text-teal-300" />
+                <span className="text-sm font-bold tracking-wide uppercase">{settings.city}</span>
+                {settings.district && settings.district !== 'Merkez' && (
+                  <span className="text-xs text-teal-200">/ {settings.district}</span>
+                )}
+              </div>
+              <p className="text-xs opacity-80">{dateStr}</p>
+            </motion.div>
+            <button onClick={onDetectLocation} className="p-2 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 transition-all active:scale-95">
+              <Navigation size={18} />
+            </button>
           </div>
-          <button onClick={onDetectLocation} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-all active:scale-95" title="Konumu Algıla">
-            <MapPin size={18} />
-          </button>
-        </div>
-        <div className="text-center py-4">
-          <p className="text-teal-200 text-lg font-medium mb-1">Vakte Kalan</p>
-          <h2 className="text-5xl font-bold tracking-tight">{next.remaining}</h2>
-          <div className="mt-2 inline-block bg-teal-900/30 px-4 py-1 rounded-full border border-teal-500/30">
-            <span className="text-lg">{next.name} Ezanı: {next.time}</span>
+
+          <div className="text-center mb-4">
+            <motion.p 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-teal-200 text-sm font-medium mb-1 uppercase tracking-widest"
+            >
+              {next.name} Vaktine Kalan
+            </motion.p>
+            <motion.h2 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-6xl font-black tracking-tighter drop-shadow-lg"
+            >
+              {next.remaining}
+            </motion.h2>
+            <div className="mt-4 inline-flex items-center space-x-2 bg-white/10 backdrop-blur-lg px-4 py-1.5 rounded-full border border-white/20">
+              <Clock size={14} className="text-teal-300" />
+              <span className="text-sm font-bold">{next.name} Ezanı: {next.time}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="px-4 -mt-6">
-        <div className="bg-white rounded-xl shadow-md p-4 grid grid-cols-3 gap-4 border border-gray-100">
-          {times && ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((key) => {
-            const labelMap: any = { Fajr: 'İmsak', Sunrise: 'Güneş', Dhuhr: 'Öğle', Asr: 'İkindi', Maghrib: 'Akşam', Isha: 'Yatsı' };
-            const isActive = labelMap[key] === next.name;
-            return (
-              <div key={key} className={`flex flex-col items-center p-2 rounded-lg ${isActive ? 'bg-teal-50 border border-teal-200' : ''}`}>
-                <span className="text-xs text-gray-500 font-medium">{labelMap[key]}</span>
-                <span className={`text-lg font-bold ${isActive ? 'text-teal-700' : 'text-gray-800'}`}>
-                  {times[key as keyof PrayerTimes]}
-                </span>
+      <div className="px-4 -mt-8 relative z-10 space-y-6">
+        {/* Ramadan Special */}
+        {isRamadan() && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-amber-500 to-orange-600 p-5 rounded-3xl shadow-xl text-white overflow-hidden relative group"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+              <Moon size={80} />
+            </div>
+            <div className="relative z-10">
+              <div className="flex items-center space-x-2 mb-2">
+                <Heart size={16} className="text-amber-200" />
+                <h3 className="font-black text-lg uppercase tracking-tighter">Hayırlı Ramazanlar</h3>
               </div>
-            );
-          })}
-          {loading && <div className="col-span-3 text-center py-4 text-gray-500">Vakitler yükleniyor...</div>}
-          {error && <div className="col-span-3 text-center py-4 text-red-500">Veri alınamadı.</div>}
-        </div>
-      </div>
-
-      {isRamadan() && (
-        <div className="px-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center shadow-sm">
-            <Moon className="text-amber-600 mr-3" />
-            <div>
-              <h3 className="font-bold text-amber-800 text-lg">Hayırlı Ramazanlar</h3>
-              <div className="flex items-center space-x-2">
-                <p className="text-amber-700 text-sm font-medium">İftara Kalan Süre:</p>
-                <span className="bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-mono font-bold text-lg animate-pulse">
-                  {iftarCountdown || '--:--:--'}
-                </span>
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-amber-100 text-xs font-medium opacity-90">İftara Kalan Süre</p>
+                  <p className="text-3xl font-mono font-black tracking-tighter mt-1 animate-pulse">{iftarCountdown}</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-lg text-xs font-bold border border-white/30">
+                  {times?.Maghrib} İftar
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
 
-      <div className="px-4 space-y-4">
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 min-h-[140px] flex flex-col justify-center">
-          <div className="flex items-center mb-2 text-teal-700">
-            <BookOpen size={20} className="mr-2" />
-            <h3 className="font-bold">Günün Ayeti</h3>
-          </div>
-          {verseLoading ? (
-            <div className="animate-pulse space-y-2">
-               <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-               <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          ) : dailyVerse ? (
-            <>
-               <p className="text-gray-700 italic text-lg leading-relaxed">"{dailyVerse.text}"</p>
-               <p className="text-right text-sm text-gray-500 mt-2">- {dailyVerse.source}</p>
-            </>
-          ) : (
-            <p className="text-gray-400 text-sm">İçerik yüklenemedi.</p>
-          )}
+        {/* Prayer Times Grid */}
+        <div className="grid grid-cols-3 gap-3">
+          {prayerItems.map((p, i) => (
+            <motion.div 
+              key={p.name}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className={`p-4 rounded-3xl border transition-all ${p.name === next.name ? 'bg-teal-700 text-white border-teal-600 shadow-lg scale-105 z-10' : 'bg-white text-gray-800 border-gray-100 shadow-sm'}`}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-3 ${p.name === next.name ? 'bg-white/20' : 'bg-teal-50 text-teal-600'}`}>
+                {p.icon}
+              </div>
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${p.name === next.name ? 'text-teal-200' : 'text-gray-400'}`}>{p.name}</p>
+              <p className="text-lg font-black tracking-tighter mt-1">{p.time}</p>
+            </motion.div>
+          ))}
         </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center mb-2 text-teal-700">
-            <Heart size={20} className="mr-2" />
-            <h3 className="font-bold">Günün Hadisi</h3>
+
+        {/* Religious Days Glance */}
+        <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <CalendarIcon size={18} className="text-teal-600" />
+              <h3 className="font-black text-gray-800 uppercase tracking-tighter">Önemli Günler</h3>
+            </div>
+            <button onClick={() => (window as any).setActiveTab('tools')} className="text-[10px] font-bold text-teal-600 uppercase tracking-widest hover:underline">Tümünü Gör</button>
           </div>
-          {dailyHadith ? (
-             <>
-               <p className="text-gray-700 text-lg leading-relaxed">{dailyHadith.text}</p>
-               <p className="text-right text-sm text-gray-500 mt-2">- {dailyHadith.source}</p>
-             </>
-          ) : (
-             <div className="animate-pulse space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-             </div>
-          )}
+          <div className="space-y-3">
+            {RELIGIOUS_DAYS.filter(d => {
+              const [day, month, year] = d.date.split(' ');
+              const monthMap: any = { 'Ocak': 0, 'Şubat': 1, 'Mart': 2, 'Nisan': 3, 'Mayıs': 4, 'Haziran': 5, 'Temmuz': 6, 'Ağustos': 7, 'Eylül': 8, 'Ekim': 9, 'Kasım': 10, 'Aralık': 11 };
+              const date = new Date(parseInt(year), monthMap[month], parseInt(day));
+              return date >= new Date();
+            }).slice(0, 2).map((day, idx) => (
+              <div key={idx} className="flex justify-between items-center p-3 bg-teal-50/50 rounded-2xl border border-teal-100/50">
+                <span className="text-sm font-bold text-gray-700">{day.name}</span>
+                <span className="text-[10px] font-bold text-teal-600 bg-white px-2 py-1 rounded-lg border border-teal-100">{day.date}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Daily Inspiration */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="font-black text-gray-800 uppercase tracking-tighter">Günün İlhamı</h3>
+            <div className="h-px flex-1 bg-gray-100 mx-4"></div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <motion.div 
+              whileHover={{ y: -5 }}
+              className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 p-4 text-teal-50 group-hover:text-teal-100 transition-colors">
+                <BookOpen size={60} />
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                  <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Günün Ayeti</p>
+                </div>
+                {verseLoading ? (
+                  <div className="h-20 flex items-center justify-center"><div className="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div></div>
+                ) : (
+                  <>
+                    <p className="text-gray-800 font-serif italic leading-relaxed mb-4">"{dailyVerse?.text}"</p>
+                    <p className="text-[10px] font-bold text-gray-400 text-right uppercase tracking-wider">— {dailyVerse?.source}</p>
+                  </>
+                )}
+              </div>
+            </motion.div>
+
+            <motion.div 
+              whileHover={{ y: -5 }}
+              className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 p-4 text-amber-50 group-hover:text-amber-100 transition-colors">
+                <Heart size={60} />
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Günün Hadisi</p>
+                </div>
+                <p className="text-gray-800 font-serif italic leading-relaxed mb-4">"{dailyHadith?.text}"</p>
+                <p className="text-[10px] font-bold text-gray-400 text-right uppercase tracking-wider">— {dailyHadith?.source}</p>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
     </div>
@@ -717,10 +810,24 @@ const QuranScreen = () => {
       </div>
       {lastRead && (
         <div className="px-4 mt-4">
-           <div onClick={() => { const surah = surahs.find(s => s.number === lastRead.surahId); if (surah) openSurah(surah, lastRead.ayahNumber); }} className="bg-gradient-to-r from-teal-700 to-teal-600 p-4 rounded-xl shadow-md flex justify-between items-center text-white cursor-pointer hover:shadow-lg transition-shadow">
-             <div><p className="text-teal-100 text-xs font-bold uppercase mb-1">Son Okunan</p><h3 className="font-bold text-lg">{lastRead.surahName} Suresi</h3><p className="text-sm opacity-90">{lastRead.ayahNumber}. Ayet</p></div>
-             <div className="bg-white/20 p-2 rounded-full"><ChevronRight size={24} /></div>
-           </div>
+           <motion.div 
+             whileHover={{ scale: 1.02 }}
+             whileTap={{ scale: 0.98 }}
+             onClick={() => { const surah = surahs.find(s => s.number === lastRead.surahId); if (surah) openSurah(surah, lastRead.ayahNumber); }} 
+             className="bg-gradient-to-br from-teal-800 to-teal-600 p-5 rounded-[2rem] shadow-xl flex justify-between items-center text-white cursor-pointer relative overflow-hidden group"
+           >
+             <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform">
+               <BookOpen size={120} />
+             </div>
+             <div className="relative z-10">
+               <p className="text-teal-200 text-[10px] font-bold uppercase tracking-widest mb-1">Kaldığınız Yerden Devam Edin</p>
+               <h3 className="font-black text-xl tracking-tighter">{lastRead.surahName} Suresi</h3>
+               <p className="text-sm opacity-90 font-medium">{lastRead.ayahNumber}. Ayet</p>
+             </div>
+             <div className="bg-white/20 backdrop-blur-md p-3 rounded-2xl border border-white/30 group-hover:bg-white/30 transition-colors">
+               <ChevronRight size={24} />
+             </div>
+           </motion.div>
         </div>
       )}
       <div className="px-4 space-y-3 mt-4">
@@ -738,8 +845,177 @@ const QuranScreen = () => {
   );
 };
 
+const KazaTracker = () => {
+  const [kaza, setKaza] = useState<KazaData>(() => {
+    const saved = localStorage.getItem('kazaData');
+    return saved ? JSON.parse(saved) : { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0 };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('kazaData', JSON.stringify(kaza));
+  }, [kaza]);
+
+  const updateKaza = (key: keyof KazaData, delta: number) => {
+    setKaza(prev => ({ ...prev, [key]: Math.max(0, prev[key] + delta) }));
+  };
+
+  const prayers = [
+    { key: 'fajr', name: 'Sabah' },
+    { key: 'dhuhr', name: 'Öğle' },
+    { key: 'asr', name: 'İkindi' },
+    { key: 'maghrib', name: 'Akşam' },
+    { key: 'isha', name: 'Yatsı' },
+    { key: 'witr', name: 'Vitir' },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-teal-50 p-4 rounded-xl border border-teal-100 mb-4">
+        <p className="text-xs text-teal-800 leading-relaxed">
+          Kılmadığınız farz namazlarınızı buradan takip edebilirsiniz. Her kıldığınız namaz için "-" butonuna basarak sayıyı azaltın.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        {prayers.map(p => (
+          <div key={p.key} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <span className="font-bold text-gray-700">{p.name}</span>
+            <div className="flex items-center space-x-4">
+              <button onClick={() => updateKaza(p.key as keyof KazaData, -1)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 active:bg-gray-200"><Minus size={16} /></button>
+              <span className="w-12 text-center font-mono font-bold text-lg text-teal-700">{kaza[p.key as keyof KazaData]}</span>
+              <button onClick={() => updateKaza(p.key as keyof KazaData, 1)} className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 active:bg-teal-200"><Plus size={16} /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <button onClick={() => { if(confirm('Tüm veriler sıfırlanacak. Emin misiniz?')) setKaza({ fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0 }); }} className="w-full py-3 text-gray-400 text-sm flex items-center justify-center hover:text-red-500 transition-colors">
+        <RotateCcw size={14} className="mr-1" /> Tümünü Sıfırla
+      </button>
+    </div>
+  );
+};
+
+const QiblaFinder = () => {
+  const [heading, setHeading] = useState<number | null>(null);
+  const [qiblaAngle, setQiblaAngle] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const calculateQibla = (lat: number, lng: number) => {
+      const meccaLat = 21.4225;
+      const meccaLng = 39.8262;
+      
+      const φ1 = lat * Math.PI / 180;
+      const φ2 = meccaLat * Math.PI / 180;
+      const Δλ = (meccaLng - lng) * Math.PI / 180;
+      
+      const y = Math.sin(Δλ) * Math.cos(φ2);
+      const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+      let q = Math.atan2(y, x) * 180 / Math.PI;
+      return (q + 360) % 360;
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setQiblaAngle(calculateQibla(pos.coords.latitude, pos.coords.longitude));
+      },
+      () => setError("Konum izni gerekli.")
+    );
+
+    const handleOrientation = (e: any) => {
+      if (e.webkitCompassHeading) {
+        setHeading(e.webkitCompassHeading);
+      } else if (e.alpha !== null) {
+        setHeading(360 - e.alpha);
+      }
+    };
+
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', handleOrientation, true);
+    } else {
+      setError("Cihazınız pusulayı desteklemiyor.");
+    }
+
+    return () => window.removeEventListener('deviceorientation', handleOrientation);
+  }, []);
+
+  const diff = heading !== null ? (qiblaAngle - heading + 360) % 360 : 0;
+  const isAligned = Math.abs(diff) < 5 || Math.abs(diff - 360) < 5;
+
+  return (
+    <div className="flex flex-col items-center py-8">
+      <div className="relative w-64 h-64 mb-8">
+        <motion.div 
+          animate={{ rotate: heading !== null ? -heading : 0 }}
+          className="absolute inset-0 rounded-full border-4 border-gray-200 flex items-center justify-center"
+        >
+          <div className="absolute top-2 text-gray-400 font-bold">K</div>
+          <div className="absolute bottom-2 text-gray-400 font-bold">G</div>
+          <div className="absolute left-2 text-gray-400 font-bold">B</div>
+          <div className="absolute right-2 text-gray-400 font-bold">D</div>
+        </motion.div>
+        
+        <motion.div 
+          animate={{ rotate: diff }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          <div className="relative flex flex-col items-center">
+            <div className={`w-1 h-32 ${isAligned ? 'bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]' : 'bg-teal-600'} rounded-full transition-colors duration-300`}></div>
+            <div className="absolute -top-8 text-3xl">🕋</div>
+          </div>
+        </motion.div>
+      </div>
+      
+      <div className="text-center">
+        <h3 className={`text-xl font-bold mb-2 ${isAligned ? 'text-green-600' : 'text-gray-700'}`}>
+          {isAligned ? 'Kıbleye Yöneldiniz' : 'Cihazı Döndürün'}
+        </h3>
+        <p className="text-sm text-gray-500">
+          Kıble Açısı: {Math.round(qiblaAngle)}°
+        </p>
+        {error && <p className="text-xs text-red-500 mt-4">{error}</p>}
+      </div>
+    </div>
+  );
+};
+
+const MosqueFinder = () => {
+  const [mosques, setMosques] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const findMosques = () => {
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const { latitude, longitude } = pos.coords;
+      // In a real app, we'd fetch from an API. Here we'll redirect to Google Maps
+      window.open(`https://www.google.com/maps/search/camii/@${latitude},${longitude},15z`, '_blank');
+      setLoading(false);
+    }, () => {
+      alert("Konum izni gerekli.");
+      setLoading(false);
+    });
+  };
+
+  return (
+    <div className="text-center py-10">
+      <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <MapIcon className="text-teal-600" size={40} />
+      </div>
+      <h3 className="text-xl font-bold text-gray-800 mb-2">Yakınımdaki Camiler</h3>
+      <p className="text-sm text-gray-500 mb-8 px-6">
+        Bulunduğunuz konuma en yakın camileri harita üzerinde görüntüleyin.
+      </p>
+      <button 
+        onClick={findMosques}
+        className="bg-teal-700 text-white px-8 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform flex items-center mx-auto"
+      >
+        {loading ? 'Aranıyor...' : 'HARİTADA GÖSTER'}
+      </button>
+    </div>
+  );
+};
+
 const ToolsScreen = () => {
-  const [activeTab, setActiveTab] = useState<'zikir' | 'zakat' | 'calendar'>('zikir');
+  const [activeTab, setActiveTab] = useState<'zikir' | 'zakat' | 'calendar' | 'kaza' | 'qibla' | 'mosque'>('zikir');
   const [zikirCount, setZikirCount] = useState(0);
   const [savedZikirs, setSavedZikirs] = useState<ZikirItem[]>([]);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -780,18 +1056,37 @@ const ToolsScreen = () => {
     setZakatResult(total > 80000 ? total * 0.025 : 0);
   };
 
+  const tabs = [
+    { id: 'zikir', name: 'Zikirmatik', icon: <Hand size={18} /> },
+    { id: 'qibla', name: 'Kıble', icon: <Compass size={18} /> },
+    { id: 'kaza', name: 'Kaza', icon: <RotateCcw size={18} /> },
+    { id: 'zakat', name: 'Zekat', icon: <Calculator size={18} /> },
+    { id: 'calendar', name: 'Takvim', icon: <CalendarIcon size={18} /> },
+    { id: 'mosque', name: 'Camiler', icon: <MapIcon size={18} /> },
+  ];
+
   return (
     <div className="pb-36 relative">
-      <div className="flex bg-white shadow-sm sticky top-0 z-40">
-        <button onClick={() => setActiveTab('zikir')} className={`flex-1 p-3 font-medium ${activeTab === 'zikir' ? 'text-teal-700 border-b-2 border-teal-700 bg-teal-50' : 'text-gray-500'}`}>Zikirmatik</button>
-        <button onClick={() => setActiveTab('zakat')} className={`flex-1 p-3 font-medium ${activeTab === 'zakat' ? 'text-teal-700 border-b-2 border-teal-700 bg-teal-50' : 'text-gray-500'}`}>Zekat</button>
-        <button onClick={() => setActiveTab('calendar')} className={`flex-1 p-3 font-medium ${activeTab === 'calendar' ? 'text-teal-700 border-b-2 border-teal-700 bg-teal-50' : 'text-gray-500'}`}>Takvim</button>
+      <div className="bg-white shadow-sm sticky top-0 z-40 overflow-x-auto no-scrollbar">
+        <div className="flex min-w-max px-2">
+          {tabs.map(tab => (
+            <button 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)} 
+              className={`p-4 font-medium flex items-center space-x-2 transition-colors ${activeTab === tab.id ? 'text-teal-700 border-b-2 border-teal-700 bg-teal-50' : 'text-gray-500'}`}
+            >
+              {tab.icon}
+              <span>{tab.name}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <div className="p-4">
         {activeTab === 'zikir' && (
           <div className="flex flex-col items-center py-8">
-            <div className="w-64 h-64 rounded-full bg-teal-600 shadow-xl flex items-center justify-center mb-8 cursor-pointer active:scale-95 transition-transform select-none" onClick={handleZikirClick}>
-              <div className="text-center text-white"><span className="block text-6xl font-bold">{zikirCount}</span><span className="text-sm opacity-80 mt-2">DOKUN</span></div>
+            <div className="w-64 h-64 rounded-full bg-teal-600 shadow-xl flex items-center justify-center mb-8 cursor-pointer active:scale-95 transition-transform select-none relative overflow-hidden group" onClick={handleZikirClick}>
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-active:opacity-100 transition-opacity"></div>
+              <div className="text-center text-white z-10"><span className="block text-6xl font-bold">{zikirCount}</span><span className="text-sm opacity-80 mt-2">DOKUN</span></div>
             </div>
             <div className="flex gap-4 mb-8">
               <button onClick={() => setZikirCount(0)} className="bg-gray-200 px-6 py-2 rounded-full text-gray-700 font-medium">Sıfırla</button>
@@ -821,6 +1116,9 @@ const ToolsScreen = () => {
             )}
           </div>
         )}
+        {activeTab === 'qibla' && <QiblaFinder />}
+        {activeTab === 'kaza' && <KazaTracker />}
+        {activeTab === 'mosque' && <MosqueFinder />}
         {activeTab === 'zakat' && (
           <div className="bg-white p-6 rounded-xl shadow-sm space-y-4">
             <h3 className="font-bold text-lg mb-2">Zekat Hesapla</h3>
@@ -846,7 +1144,7 @@ const ToolsScreen = () => {
   );
 };
 
-const SettingsScreen = ({ settings, setSettings }: any) => {
+const SettingsScreen = ({ settings, setSettings, sendNotification }: any) => {
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
   const [isDistrictModalOpen, setIsDistrictModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -860,23 +1158,6 @@ const SettingsScreen = ({ settings, setSettings }: any) => {
   };
 
   const toggleSetting = (key: string) => updateSetting(key, !settings[key]);
-
-  const sendNotification = (title: string, options: NotificationOptions) => {
-    if (!("Notification" in window)) return;
-    
-    if (Notification.permission === "granted") {
-      // Try Service Worker first (more reliable on mobile)
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(registration => {
-          registration.showNotification(title, options);
-        }).catch(() => {
-          new Notification(title, options);
-        });
-      } else {
-        new Notification(title, options);
-      }
-    }
-  };
 
   const handleTestNotification = () => {
     if (!("Notification" in window)) {
@@ -905,7 +1186,15 @@ const SettingsScreen = ({ settings, setSettings }: any) => {
     <div className="pb-36 p-4 space-y-6">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="font-bold text-gray-700">Ezan Bildirim Ayarları</h3>
+          <div>
+            <h3 className="font-bold text-gray-700">Ezan Bildirim Ayarları</h3>
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              İzin: {!("Notification" in window) ? 'Desteklenmiyor' : 
+                      Notification.permission === 'granted' ? 'Verildi' : 
+                      Notification.permission === 'denied' ? 'Engellendi' : 'Bekleniyor'} 
+              | SW: {'serviceWorker' in navigator ? 'Aktif' : 'Pasif'}
+            </p>
+          </div>
           <button 
             onClick={handleTestNotification}
             className="flex items-center space-x-1 text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full font-bold hover:bg-teal-200 transition-colors"
@@ -1015,10 +1304,13 @@ const SettingsScreen = ({ settings, setSettings }: any) => {
         <div className="flex items-start">
           <Bell className="text-amber-600 mr-3 mt-1" size={20} />
           <div>
-            <h4 className="font-bold text-amber-800 text-sm">Android Kullanıcıları İçin Not</h4>
-            <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-              Uygulama kapalıyken bildirim alabilmek için uygulamanın "Pil Tasarrufu" modunda "Kısıtlama Yok" olarak ayarlandığından emin olun. 
-            </p>
+            <h4 className="font-bold text-amber-800 text-sm">Bildirim Sorun Giderici</h4>
+            <div className="text-xs text-amber-700 mt-1 space-y-2 leading-relaxed">
+              <p>• <strong>Pil Tasarrufu:</strong> Ayarlardan uygulamanın pil kullanımını "Kısıtlama Yok" olarak belirleyin.</p>
+              <p>• <strong>Bildirim İzni:</strong> Yukarıdaki "Durum" kısmında "İzin Verildi" yazdığından emin olun.</p>
+              <p>• <strong>Play Store/WebView:</strong> Eğer bildirim gelmiyorsa, telefonunuzun Ayarlar {'>'} Uygulamalar {'>'} Ezan Vakti {'>'} Bildirimler kısmından tüm izinlerin açık olduğunu kontrol edin.</p>
+              <p>• <strong>Arka Plan:</strong> Bazı telefonlarda uygulamanın arka planda çalışması için "Otomatik Başlatma" izni gerekebilir.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1034,12 +1326,40 @@ const SettingsScreen = ({ settings, setSettings }: any) => {
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('home');
+  useEffect(() => { (window as any).setActiveTab = setActiveTab; }, []);
   const [times, setTimes] = useState<PrayerTimes | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  const sendNotification = (title: string, options: NotificationOptions) => {
+    if (!("Notification" in window)) return;
+    
+    if (Notification.permission === "granted") {
+      // Method 1: Service Worker Registration (Best for mobile)
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'SHOW_NOTIFICATION',
+          title,
+          options
+        });
+      }
+      
+      // Method 2: Direct SW showNotification
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification(title, options);
+        }).catch(() => {
+          // Method 3: Standard Notification API
+          try { new Notification(title, options); } catch(e) { console.error(e); }
+        });
+      } else {
+        try { new Notification(title, options); } catch(e) { console.error(e); }
+      }
+    }
+  };
   
   const defaultSettings: UserSettings = {
-    notificationsEnabled: true, city: 'İstanbul', district: 'Merkez', soundEnabled: true, selectedPrayerSound: 'beep', vibrationEnabled: true,
+    notificationsEnabled: true, city: 'İstanbul', district: 'Merkez', soundEnabled: true, selectedPrayerSound: 'beep', vibrationEnabled: true, theme: 'light',
     hadithNotificationEnabled: true, hadithSoundEnabled: true, selectedHadithSound: 'water', verseNotificationEnabled: true, verseSoundEnabled: true, selectedVerseSound: 'water'
   };
 
@@ -1091,22 +1411,13 @@ const App = () => {
           // Prevent multiple notifications in the same minute
           const lastNotifKey = `last_notif_${match.name}_${new Date().toDateString()}`;
           if (localStorage.getItem(lastNotifKey) !== timeStr) {
-            if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification(`${match.name} Vakti`, {
-                  body: `${settings.city} için ${match.name} vakti girdi.`,
-                  icon: '/icon.png',
-                  badge: '/icon.png',
-                  vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40],
-                  tag: 'prayer-time'
-                } as any);
-              });
-            } else {
-              new Notification(`${match.name} Vakti`, { 
-                body: `${settings.city} için ${match.name} vakti girdi.`, 
-                icon: '/icon.png' 
-              });
-            }
+            sendNotification(`${match.name} Vakti`, {
+              body: `${settings.city} için ${match.name} vakti girdi.`,
+              icon: '/icon.png',
+              badge: '/icon.png',
+              vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40],
+              tag: 'prayer-time'
+            } as any);
             
             if (settings.soundEnabled) playSound(settings.selectedPrayerSound);
             localStorage.setItem(lastNotifKey, timeStr);
@@ -1222,25 +1533,62 @@ const App = () => {
   }, [settings]); // Re-bind when settings change to ensure correct closure
 
   const renderContent = () => {
-    switch (activeTab) {
-      case 'home': return <HomeScreen times={times} loading={loading} error={error} settings={settings} onRefresh={fetchTimes} onDetectLocation={detectLocation} />;
-      case 'quran': return <QuranScreen />;
-      case 'tools': return <ToolsScreen />;
-      case 'settings': return <SettingsScreen settings={settings} setSettings={setSettings} />;
-      default: return <HomeScreen />;
-    }
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          {(() => {
+            switch (activeTab) {
+              case 'home': return <HomeScreen times={times} loading={loading} error={error} settings={settings} onRefresh={fetchTimes} onDetectLocation={detectLocation} />;
+              case 'quran': return <QuranScreen />;
+              case 'tools': return <ToolsScreen />;
+              case 'settings': return <SettingsScreen settings={settings} setSettings={setSettings} sendNotification={sendNotification} />;
+              default: return <HomeScreen />;
+            }
+          })()}
+        </motion.div>
+      </AnimatePresence>
+    );
   };
 
   return (
     <div className="h-[100dvh] bg-slate-50 relative max-w-md mx-auto shadow-2xl overflow-hidden flex flex-col">
-      <Header title={activeTab === 'home' ? 'Ezan Vakti' : activeTab === 'quran' ? "Kur'an-ı Kerim" : activeTab === 'tools' ? 'Araçlar' : 'Ayarlar'} />
+      {activeTab !== 'home' && (
+        <Header title={activeTab === 'quran' ? "Kur'an-ı Kerim" : activeTab === 'tools' ? 'Araçlar' : 'Ayarlar'} />
+      )}
       <main className="flex-1 overflow-y-auto no-scrollbar">{renderContent()}</main>
-      <div className="bg-white border-t z-50 w-full max-w-md fixed bottom-0 left-0 right-0 mx-auto"><AdBanner />
-        <div className="flex justify-around items-center p-2 pb-safe">
-          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center p-2 ${activeTab === 'home' ? 'text-teal-700' : 'text-gray-400'}`}><Home size={24} /><span className="text-xs font-medium mt-1">Ana Sayfa</span></button>
-          <button onClick={() => setActiveTab('quran')} className={`flex flex-col items-center p-2 ${activeTab === 'quran' ? 'text-teal-700' : 'text-gray-400'}`}><BookOpen size={24} /><span className="text-xs font-medium mt-1">Kur'an</span></button>
-          <button onClick={() => setActiveTab('tools')} className={`flex flex-col items-center p-2 ${activeTab === 'tools' ? 'text-teal-700' : 'text-gray-400'}`}><Menu size={24} /><span className="text-xs font-medium mt-1">Araçlar</span></button>
-          <button onClick={() => setActiveTab('settings')} className={`flex flex-col items-center p-2 ${activeTab === 'settings' ? 'text-teal-700' : 'text-gray-400'}`}><Settings size={24} /><span className="text-xs font-medium mt-1">Ayarlar</span></button>
+      
+      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-md mx-auto">
+        <AdBanner />
+        <div className="bg-white/80 backdrop-blur-xl border-t border-gray-100 px-6 py-3 flex justify-between items-center pb-safe">
+          {[
+            { id: 'home', icon: <Home size={22} />, label: 'Ana Sayfa' },
+            { id: 'quran', icon: <BookOpen size={22} />, label: 'Kur\'an' },
+            { id: 'tools', icon: <Menu size={22} />, label: 'Araçlar' },
+            { id: 'settings', icon: <Settings size={22} />, label: 'Ayarlar' },
+          ].map(tab => (
+            <button 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)} 
+              className={`flex flex-col items-center transition-all duration-300 relative ${activeTab === tab.id ? 'text-teal-700 scale-110' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              {activeTab === tab.id && (
+                <motion.div 
+                  layoutId="activeTab"
+                  className="absolute -top-2 w-8 h-1 bg-teal-700 rounded-full"
+                />
+              )}
+              {tab.icon}
+              <span className={`text-[10px] font-bold mt-1 uppercase tracking-tighter ${activeTab === tab.id ? 'opacity-100' : 'opacity-60'}`}>
+                {tab.label}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
     </div>
